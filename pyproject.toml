@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fastapi-repository"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
-  { name="Seiya Takeda", email="takedaseiya@gmail.com" },
+  { name="Peter Seiya Takahashi", email="seiya4@icloud.com" },
 ]
 description = "A base repository for FastAPI projects, inspired by Ruby on Rails' Active Record and Ransack."
 readme = "README.md"
