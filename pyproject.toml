@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastapi-repository"
+version = "0.0.1"
+authors = [
+  { name="Seiya Takeda", email="takedaseiya@gmail.com" },
+]
+description = "A base repository for FastAPI projects, inspired by Ruby on Rails' Active Record and Ransack."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "sqlalchemy>=1.4.0",
+    "fastapi>=0.70.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/seiyat/fastapi-repository"
+"Bug Tracker" = "https://github.com/seiyat/fastapi-repository/issues"
