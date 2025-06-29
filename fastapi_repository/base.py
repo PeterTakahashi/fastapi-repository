@@ -154,7 +154,8 @@ class BaseRepository:
         conditions = []
         if not disable_default_scope:
             default_conditions = await self.__get_conditions(**self.default_scope)
-            conditions.extend(default_conditions)
+            if default_conditions:
+                conditions.extend(default_conditions)
 
         conditions += await self.__get_conditions(**search_params)
         query = select(func.count("*")).select_from(self.model).where(*conditions)
@@ -270,6 +271,7 @@ class BaseRepository:
                         f"{self.model.__name__} has no attribute '{key}'"
                     )
                 conditions.append(column == value)
+        return conditions
 
     async def create(self, **create_params):
         """

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fastapi-repository"
-version = "0.0.2"
+version = "0.0.4"
 authors = [
   { name="Peter Seiya Takahashi", email="seiya4@icloud.com" },
 ]
@@ -24,3 +24,6 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/seiyat/fastapi-repository"
 "Bug Tracker" = "https://github.com/seiyat/fastapi-repository/issues"
+
+[dependency-groups]
+dev = []
