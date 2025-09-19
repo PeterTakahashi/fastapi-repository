@@ -165,54 +165,76 @@ async def delete_user(user_id: int, session: AsyncSession = Depends(get_session)
 Here are the core methods available on `BaseRepository`.
 
 ### `find(id, **kwargs)`
+
 Finds a record by its primary key.
+
 - **Raises:** `NoResultFound` if the record does not exist.
 - **Example:** `await repo.find(1)`
 
 ### `find_by(**search_params)`
+
 Finds the first record matching the criteria.
+
 - **Returns:** The model instance or `None`.
 - **Example:** `await repo.find_by(email="user@example.com")`
 
 ### `find_by_or_raise(**search_params)`
+
 Like `find_by`, but raises `NoResultFound` if no record is found.
+
 - **Example:** `await repo.find_by_or_raise(email="user@example.com")`
 
 ### `where(**search_params)`
+
 Finds all records matching the criteria. Supports pagination and sorting.
+
 - **Parameters:**
-    - `limit`: Max number of records.
-    - `offset`: Number of records to skip.
-    - `sorted_by`: Field to sort by (e.g., `"name"`).
-    - `sorted_order`: `"asc"` or `"desc"`.
+  - `limit`: Max number of records.
+  - `offset`: Number of records to skip.
+  - `sorted_by`: Field to sort by (e.g., `"name"`).
+  - `sorted_order`: `"asc"` or `"desc"`.
 - **Example:** `await repo.where(is_active=True, limit=10, sorted_by="name", sorted_order="desc")`
 
 ### `count(**search_params)`
+
 Counts records matching the criteria.
+
 - **Example:** `await repo.count(is_active=True)`
 
 ### `exists(**search_params)`
+
 Checks if a record matching the criteria exists.
+
 - **Example:** `await repo.exists(email="user@example.com")`
 
 ### `create(**create_params)`
+
 Creates a new record.
+
 - **Example:** `await repo.create(name="John Doe", email="john@example.com")`
 
 ### `update(id, **update_params)`
+
 Updates a record by its primary key.
+
 - **Example:** `await repo.update(1, name="Jane Doe")`
 
 ### `update_all(updates, **search_params)`
+
 Updates all records matching the criteria.
+
 - **Example:** `await repo.update_all({"is_active": False}, name__icontains="spam")`
 
 ### `destroy(id)`
+
 Deletes a record by its primary key.
+
 - **Example:** `await repo.destroy(1)`
 
 ### `destroy_all(**search_params)`
+
 Deletes all records matching the criteria.
+
 - **Example:** `await repo.destroy_all(is_active=False)`
 
 ## Advanced Topics
@@ -223,21 +245,21 @@ The `where`, `find_by`, and other query methods support Ransack-style filtering 
 
 **Supported Operators:**
 
-| Operator      | Description              | Example                            |
-|---------------|--------------------------|------------------------------------|
-| `exact`       | Exact match              | `name__exact="John"`               |
-| `iexact`      | Case-insensitive match   | `name__iexact="john"`              |
-| `contains`    | Contains substring       | `name__contains="oh"`              |
-| `icontains`   | Case-insensitive contains| `name__icontains="OH"`             |
-| `in`          | In a list of values      | `id__in=[1, 2, 3]`                 |
-| `gt`          | Greater than             | `age__gt=18`                       |
-| `gte`         | Greater than or equal to | `age__gte=18`                      |
-| `lt`          | Less than                | `age__lt=65`                       |
-| `lte`         | Less than or equal to    | `age__lte=65`                      |
-| `startswith`  | Starts with a string     | `name__startswith="J"`             |
-| `istartswith` | Case-insensitive starts  | `name__istartswith="j"`            |
-| `endswith`    | Ends with a string       | `name__endswith="n"`               |
-| `iendswith`   | Case-insensitive ends    | `name__iendswith="N"`              |
+| Operator      | Description               | Example                 |
+| ------------- | ------------------------- | ----------------------- |
+| `exact`       | Exact match               | `name__exact="John"`    |
+| `iexact`      | Case-insensitive match    | `name__iexact="john"`   |
+| `contains`    | Contains substring        | `name__contains="oh"`   |
+| `icontains`   | Case-insensitive contains | `name__icontains="OH"`  |
+| `in`          | In a list of values       | `id__in=[1, 2, 3]`      |
+| `gt`          | Greater than              | `age__gt=18`            |
+| `gte`         | Greater than or equal to  | `age__gte=18`           |
+| `lt`          | Less than                 | `age__lt=65`            |
+| `lte`         | Less than or equal to     | `age__lte=65`           |
+| `startswith`  | Starts with a string      | `name__startswith="J"`  |
+| `istartswith` | Case-insensitive starts   | `name__istartswith="j"` |
+| `endswith`    | Ends with a string        | `name__endswith="n"`    |
+| `iendswith`   | Case-insensitive ends     | `name__iendswith="N"`   |
 
 ### Eager and Lazy Loading
 
@@ -252,6 +274,22 @@ user = await repo.find(1, joinedload_models=[User.profile])
 
 # Find all users and eager load their 'addresses'
 users = await repo.where(joinedload_models=[User.addresses])
+```
+
+if you'd like to join multiple tables, you can use this.
+
+```python
+# Multi-level relationship loading using string paths (separated by '__')
+await repo.where(joinedload_models=["orders__items__product"])
+
+# You can also use a list of strings
+await repo.where(joinedload_models=[["orders", "items", "product"]])
+
+# Single-level attribute reference (as before)
+await repo.where(joinedload_models=[User.profile])
+
+# Multi-level attribute chaining
+await repo.where(joinedload_models=[(User.orders, Order.items, Item.product)])
 ```
 
 ### Default Scope

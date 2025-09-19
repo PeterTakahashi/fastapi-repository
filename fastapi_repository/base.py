@@ -1,10 +1,10 @@
+from typing import Optional, List, Union, Dict, Any, Sequence
+from uuid import UUID
+from sqlalchemy import func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.future import select
-from uuid import UUID
 from sqlalchemy.orm import joinedload, lazyload
-from sqlalchemy import func, update, delete
-from typing import Optional, List, Union, Dict, Any
 
 OPERATORS = {
     # Exact match
@@ -198,11 +198,12 @@ class BaseRepository:
         query = select(self.model).where(*conditions)
 
         if joinedload_models:
-            for model in joinedload_models:
-                query = query.options(joinedload(model))
+            for spec in joinedload_models:
+                query = query.options(self._build_loader_option(spec, loader="joined"))
+
         if lazyload_models:
-            for model in lazyload_models:
-                query = query.options(lazyload(model))
+            for spec in lazyload_models:
+                query = query.options(self._build_loader_option(spec, loader="lazy"))
 
         if sorted_by:
             query = self._apply_order_by(query, sorted_by, sorted_order)
@@ -339,3 +340,74 @@ class BaseRepository:
         result = await self.session.execute(stmt)
         await self.session.commit()
         return result.rowcount
+
+    def _resolve_attr_chain(self, start_cls, names: Sequence[str]):
+        """
+        Example: names = ["orders", "items", "product"]
+        Traverse relationship attributes sequentially from start_cls and return a list of InstrumentedAttributes
+        """
+        current_cls = start_cls
+        attrs = []
+        for name in names:
+            attr = getattr(current_cls, name, None)
+            if attr is None or not hasattr(attr, "property"):
+                raise AttributeError(f"{current_cls.__name__} has no relationship '{name}'")
+            attrs.append(attr)
+            current_cls = attr.property.mapper.class_
+        return attrs
+
+    def _build_loader_option(self, item, loader: str = "joined"):
+        """
+        `item` accepts any of the following:
+          - String path: "orders__items__product"
+          - Array/tuple of strings: ["orders", "items", "product"]
+          - Single InstrumentedAttribute
+          - Array/tuple of InstrumentedAttributes (multi-level)
+        loader: "joined" | "lazy"
+        """
+        if loader not in {"joined", "lazy"}:
+            raise ValueError("loader must be 'joined' or 'lazy'")
+
+        def first_loader(attr):
+            return joinedload(attr) if loader == "joined" else lazyload(attr)
+
+        def chain_loader(opt, attr):
+            return opt.joinedload(attr) if loader == "joined" else opt.lazyload(attr)
+
+        # String ("rel__rel2__rel3")
+        if isinstance(item, str):
+            parts = [p for p in item.split("__") if p]
+            if not parts:
+                raise ValueError("empty relationship path")
+            attrs = self._resolve_attr_chain(self.model, parts)
+            opt = first_loader(attrs[0])
+            for a in attrs[1:]:
+                opt = chain_loader(opt, a)
+            return opt
+
+        # Sequence of strings (["rel", "rel2", ...])
+        if isinstance(item, (list, tuple)) and all(isinstance(p, str) for p in item):
+            attrs = self._resolve_attr_chain(self.model, item)
+            opt = first_loader(attrs[0])
+            for a in attrs[1:]:
+                opt = chain_loader(opt, a)
+            return opt
+
+        # Single InstrumentedAttribute
+        if hasattr(item, "property"):
+            return first_loader(item)
+
+        # Sequence of InstrumentedAttributes
+        if isinstance(item, (list, tuple)) and all(hasattr(p, "property") for p in item):
+            if not item:
+                raise ValueError("empty attribute chain")
+            opt = first_loader(item[0])
+            for a in item[1:]:
+                opt = chain_loader(opt, a)
+            return opt
+
+        raise TypeError(
+            "joinedload_models/lazyload_models item must be a relationship attribute, "
+            "a list/tuple of relationship attributes, a string path 'a__b__c', "
+            "or a list/tuple of strings ['a','b','c']."
+        )
